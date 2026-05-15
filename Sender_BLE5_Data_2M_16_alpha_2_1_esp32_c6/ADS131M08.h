@@ -346,9 +346,10 @@ private:
   AdcOutput fullScale;
   AdcOutput resultRaw;
   AdcOutput resultFloat;
-  SPIClass spi;
+  
+  // SPIClass spi;  <--- УДАЛЯЕМ ЭТУ СТРОКУ!
 
-  uint32_t transfer24(uint32_t data); // Helper for 24-bit SPI transfer (retained for non-bulk command transfers)
+  uint32_t transfer24(uint32_t data); 
   float scaleResult(uint8_t);
   AdcOutput scaleResult(void);
 };

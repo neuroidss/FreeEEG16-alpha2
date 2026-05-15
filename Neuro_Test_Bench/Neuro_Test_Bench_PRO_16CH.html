@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neuro Test Bench PRO (16CH)</title>
     <style>
-        :root { --bg: #111; --panel: #1a1a1a; --border: #333; --accent: #0f0; --accent-hover: #0c0; --text: #eee; }
+        :root { --bg: #111; --panel: #1a1a1a; --border: #333; --accent: #0f0; --text: #eee; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg); color: var(--text); margin: 0; padding: 15px; 
@@ -13,7 +13,6 @@
             gap: 15px; height: 100vh; box-sizing: border-box; overflow: hidden;
         }
         
-        /* Адаптивность для мобильных */
         @media (max-width: 900px) { 
             body { 
                 grid-template-columns: 1fr; grid-template-rows: auto 400px 250px; 
@@ -21,32 +20,32 @@
             } 
         }
         
-        .sidebar { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 15px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-y: auto;}
+        .sidebar { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 12px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-y: auto;}
         @media (max-width: 900px) { .sidebar { grid-row: 1; } }
 
         .canvas-container { position: relative; background: #000; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; width: 100%; height: 100%; min-height: 250px; }
         
         h2 { margin: 0; font-size: 22px; text-align: center; color: var(--accent); letter-spacing: 1px; }
         
-        button { background: #2a2a2a; color: var(--accent); border: 1px solid var(--accent); padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        button { background: #2a2a2a; color: var(--accent); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--accent); color: #000; }
         button:disabled { border-color: #555; color: #555; background: #222; cursor: not-allowed; }
         
-        .btn-connect { background: #0055ff; border-color: #4488ff; color: white; font-size: 16px; padding: 15px;}
+        .btn-connect { background: #0055ff; border-color: #4488ff; color: white; font-size: 16px; padding: 14px;}
         .btn-connect:hover { background: #4488ff; color: white;}
         
         .control-group { display: flex; flex-direction: column; gap: 8px; background: #222; padding: 12px; border-radius: 8px; border: 1px solid #333; }
         .control-row { display: flex; justify-content: space-between; align-items: center; }
-        .control-row label { font-size: 13px; font-weight: bold; color: #ccc; }
+        .control-row label { font-size: 12px; font-weight: bold; color: #ccc; }
         select { background: #111; color: var(--accent); border: 1px solid #444; padding: 6px; border-radius: 6px; font-weight: bold; outline: none; cursor: pointer; }
-        select:focus { border-color: var(--accent); }
-
-        .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .presets button { padding: 10px 5px; font-size: 12px; }
-
-        .status-box { background: #000; border: 1px solid #444; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; color: #aaa; display: flex; justify-content: space-between; }
-        .status-box span { color: var(--accent); font-weight: bold; }
         
+        .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .status-box { background: #000; border: 1px solid #444; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #aaa; display: flex; justify-content: space-between; }
+        .status-box span { color: var(--accent); font-weight: bold; font-size: 14px; }
+        .metrics-box { flex-direction: column; gap: 6px; }
+        .metrics-row { display: flex; justify-content: space-between; }
+
         #console { background: #000; color: #0f0; font-family: monospace; font-size: 11px; flex-grow: 1; overflow-y: auto; padding: 10px; border-radius: 8px; border: 1px solid #444; word-wrap: break-word; min-height: 100px; }
         
         .canvas-title { position: absolute; top: 10px; right: 15px; color: #fff; font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; border: 1px solid #444; pointer-events: none;}
@@ -63,48 +62,57 @@
             <div class="control-row">
                 <label>PGA GAIN:</label>
                 <select id="selPGA">
-                    <option value="0">1</option>
-                    <option value="1">2</option>
-                    <option value="2">4</option>
-                    <option value="3">8</option>
-                    <option value="4">16</option>
-                    <option value="5">32</option>
-                    <option value="6">64</option>
-                    <option value="7">128</option>
+                    <option value="0">1</option><option value="1">2</option><option value="2">4</option>
+                    <option value="3">8</option><option value="4">16</option><option value="5" selected>32</option>
+                    <option value="6">64</option><option value="7">128</option>
                 </select>
             </div>
             <div class="control-row">
                 <label>SAMPLE RATE:</label>
                 <select id="selSPS">
-                    <option value="7">250 SPS</option>
-                    <option value="6">500 SPS</option>
-                    <option value="5">1 kSPS</option>
-                    <option value="4">2 kSPS</option>
-                    <option value="3">4 kSPS</option>
+                    <option value="7" selected>250</option><option value="6">500</option>
+                    <option value="5">1000</option><option value="4">2000</option>
                 </select>
             </div>
             <div class="control-row">
                 <label>INPUT MUX:</label>
                 <select id="selMUX">
-                    <option value="0">Normal Input</option>
+                    <option value="0" selected>Normal Input</option>
                     <option value="1">Shorted (Noise)</option>
                     <option value="2">Test Signal (DC)</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <label>DC BLOCK FILTER:</label>
+                <select id="selDCBlock">
+                    <option value="15" selected>Enabled (~0.01Hz)</option>
+                    <option value="0">Disabled (Fast Settling)</option>
                 </select>
             </div>
             <button id="btnApply" onclick="applySettings()" style="margin-top: 5px; background: #333; color: white;">APPLY SETTINGS</button>
         </div>
 
         <div class="presets">
-            <button onclick="applyPreset(0, 7, 1)">NOISE TEST</button>
-            <button onclick="applyPreset(0, 7, 2)">DC SIGNAL</button>
-            <button onclick="applyPreset(5, 7, 0)">EEG (32x)</button>
-            <button onclick="applyPreset(2, 6, 0)">EMG (4x)</button>
+            <!-- (PGA, SPS, MUX, DC_BLOCK) -->
+            <button onclick="applyPreset(0, 7, 1, 0)">NOISE TEST</button>
+            <button onclick="applyPreset(0, 7, 2, 0)">DC SIGNAL</button>
+            <button onclick="applyPreset(5, 7, 0, 15)">EEG (32x)</button>
+            <button onclick="applyPreset(2, 6, 0, 15)">EMG (4x)</button>
         </div>
 
         <div class="status-box">
             <div>CH: <span id="lblCH">0</span></div>
             <div>PGA: <span id="lblPGA">?</span></div>
             <div>SPS: <span id="lblSPS">?</span></div>
+        </div>
+
+        <div class="status-box metrics-box">
+            <div class="metrics-row"><span>CH1 DC (Mean):</span> <span id="lblMean">0.00 µV</span></div>
+            <div class="metrics-row"><span>CH1 AC RMS:</span> <span id="lblRMS">0.00 µV</span></div>
+            <div class="metrics-row"><span>CH1 PK-PK:</span> <span id="lblPkPk">0.00 µV</span></div>
+            <div class="metrics-row" style="margin-top: 5px; border-top: 1px solid #333; padding-top: 5px;">
+                <span>PKT DROPS:</span> <span id="lblDrops" style="color: #ff4444;">0</span>
+            </div>
         </div>
 
         <div id="console">System Ready...<br></div>
@@ -121,7 +129,6 @@
     </div>
 
 <script>
-// --- BLE КОНФИГУРАЦИЯ ---
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const DATA_UUID    = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const CMD_UUID     = "c0de0001-36e1-4688-b7f5-ea07361b26a8";
@@ -130,18 +137,21 @@ let dataChar, cmdChar;
 let isConnected = false;
 let isConfiguring = false;
 
-// --- ПАРАМЕТРЫ СИСТЕМЫ ---
-let currentPGA = 1;
-let activeChannels = 0; // Определяется динамически по размеру пакета
-const MAX_CHANNELS = 32; // Резерв
+// Состояние системы
+let currentPGA = 32;
+let currentSPS = 250;
+let activeChannels = 0; 
 
-// --- БУФЕРЫ ОТРИСОВКИ ---
+// Аналитика потерь пакетов
+let lastPacketId = -1;
+let droppedPackets = 0;
+
 const SCOPE_LEN = 300;
-let scopeData = Array.from({length: MAX_CHANNELS}, () => new Float32Array(SCOPE_LEN).fill(0));
+const MAX_CH = 32;
+let scopeData = Array.from({length: MAX_CH}, () => new Float32Array(SCOPE_LEN).fill(0));
 let fftData = new Float32Array(256).fill(0);
 let fftPointer = 0;
 
-// Цвета для 16+ каналов
 const colors = [
     "#FF3333", "#FF9933", "#FFFF33", "#99FF33", "#33FF33", "#33FF99", "#33FFFF", "#3399FF", 
     "#3333FF", "#9933FF", "#FF33FF", "#FF3399", "#FFFFFF", "#CCCCCC", "#999999", "#666666"
@@ -159,7 +169,7 @@ function setButtonsState(disabled) {
     document.querySelectorAll('select').forEach(b => b.disabled = disabled);
 }
 
-// === ПРОЗРАЧНЫЙ МОСТ ===
+// === SPI BRIDGE ===
 let pendingReadResolve = null;
 
 async function readReg(addr) {
@@ -180,11 +190,9 @@ async function writeRegVerified(addr, val, mask=null) {
         let data = mask !== null ? 
             new Uint8Array([addr, (val>>8)&0xFF, val&0xFF, (mask>>8)&0xFF, mask&0xFF]) : 
             new Uint8Array([addr, (val>>8)&0xFF, val&0xFF]);
-        
         try {
             await cmdChar.writeValue(data);
             await new Promise(r => setTimeout(r, 80));
-            
             let read_val = await readReg(addr);
             if (read_val === null) throw "Timeout";
 
@@ -195,21 +203,20 @@ async function writeRegVerified(addr, val, mask=null) {
                 log(`[OK] 0x${addr.toString(16).padStart(2,'0')} = 0x${read_val.toString(16).padStart(4,'0')}`);
                 return;
             } else {
-                log(`[ERR] 0x${addr.toString(16)}: Прочитано 0x${read_val.toString(16)}, Повтор...`);
+                log(`[ERR] 0x${addr.toString(16)}: Прочтено 0x${read_val.toString(16)}, Повтор...`);
             }
-        } catch (e) { log(`Ошибка записи 0x${addr.toString(16)}: ${e}`); }
+        } catch (e) { log(`Ошибка 0x${addr.toString(16)}: ${e}`); }
         attempt++;
         await new Promise(r => setTimeout(r, 100));
     }
-    log(`[FAIL] Не удалось записать 0x${addr.toString(16)}!`);
+    log(`[FAIL] Ошибка записи 0x${addr.toString(16)}!`);
 }
 
-// === УПРАВЛЕНИЕ НАСТРОЙКАМИ ===
-
-function applyPreset(pga, sps, mux) {
+function applyPreset(pga, sps, mux, dcblock) {
     document.getElementById('selPGA').value = pga;
     document.getElementById('selSPS').value = sps;
     document.getElementById('selMUX').value = mux;
+    document.getElementById('selDCBlock').value = dcblock;
     applySettings();
 }
 
@@ -217,40 +224,50 @@ async function applySettings() {
     if (isConfiguring || !isConnected) return;
     isConfiguring = true; setButtonsState(true);
     
+    // Сброс счётчиков при новой настройке
+    lastPacketId = -1;
+    droppedPackets = 0;
+    document.getElementById('lblDrops').innerText = 0;
+    
     let pgaCode = parseInt(document.getElementById('selPGA').value);
     let spsCode = parseInt(document.getElementById('selSPS').value);
     let muxCode = parseInt(document.getElementById('selMUX').value);
+    let dcBlockCode = parseInt(document.getElementById('selDCBlock').value);
+
+    const spsMap = {7: 250, 6: 500, 5: 1000, 4: 2000, 3: 4000};
+    currentSPS = spsMap[spsCode];
 
     log("--- ПРИМЕНЕНИЕ НАСТРОЕК ---");
     
-    // 1. OSR (Sample Rate) - Регистр 0x03, биты [4:2]
+    // 1. OSR (Sample Rate)
     let osrVal = spsCode << 2;
     await writeRegVerified(0x03, osrVal, 0x001C); 
 
-    // 2. PGA (Усиление) - Регистры 0x04 и 0x05
+    // 2. DC Block Filter (Регистр 0x08, маска 0x000F)
+    await writeRegVerified(0x08, dcBlockCode, 0x000F);
+
+    // 3. PGA Gain
     let pgaVal = (pgaCode<<12) | (pgaCode<<8) | (pgaCode<<4) | pgaCode;
     await writeRegVerified(0x04, pgaVal); 
     await writeRegVerified(0x05, pgaVal); 
     currentPGA = [1,2,4,8,16,32,64,128][pgaCode];
 
-    // 3. MUX - Регистры 0x09 + i*5
+    // 4. MUX (Входы)
     for (let i = 0; i < 8; i++) {
         await writeRegVerified(0x09 + (i * 5), muxCode, 0x0003); 
     }
 
-    // Обновляем UI
     document.getElementById('lblPGA').innerText = currentPGA;
-    document.getElementById('lblSPS').innerText = document.getElementById('selSPS').options[document.getElementById('selSPS').selectedIndex].text;
+    document.getElementById('lblSPS').innerText = currentSPS;
     log("--- НАСТРОЙКИ ПРИМЕНЕНЫ ---");
     
     isConfiguring = false; setButtonsState(false);
 }
 
-
-// === ПОДКЛЮЧЕНИЕ ===
+// === BLE ПОДКЛЮЧЕНИЕ ===
 document.getElementById('btnConnect').onclick = async () => {
     try {
-        log("Поиск BLE устройства...");
+        log("Поиск BLE...");
         const device = await navigator.bluetooth.requestDevice({ filters: [{ services:[SERVICE_UUID] }] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
@@ -272,60 +289,61 @@ document.getElementById('btnConnect').onclick = async () => {
 
         isConnected = true;
         document.getElementById('btnConnect').innerText = "CONNECTED";
-        document.getElementById('btnConnect').style.background = "var(--accent)";
+        document.getElementById('btnConnect').style.background = "#0f0";
         document.getElementById('btnConnect').style.color = "#000";
-        log("Подключено! Проверяем связь...");
+        log("Подключено! Ожидание данных...");
         
-        let id = await readReg(0x00);
-        log(`ID чипа: 0x${id !== null ? id.toString(16) : "ERROR"}`);
-
     } catch (e) { log("Ошибка BLE: " + e); }
 };
 
-// === ПАРСИНГ ДАННЫХ И АВТО-ДЕТЕКТ КАНАЛОВ ===
+// === ПАРСИНГ ДАННЫХ ===
 function handleData(e) {
     const buf = new Uint8Array(e.target.value.buffer);
-    
-    // Проверка заголовка
     if (buf[0] !== 0xA0) return;
 
-    // Автоопределение количества каналов
-    // Если 33 байта -> 8 каналов, если 51 байт -> 16 каналов.
+    // ПРОВЕРКА ПОТЕРИ ПАКЕТОВ
+    let packetId = buf[1];
+    if (lastPacketId !== -1) {
+        let diff = (packetId - lastPacketId) & 0xFF;
+        if (diff > 1 && diff < 100) { 
+            droppedPackets += (diff - 1);
+            document.getElementById('lblDrops').innerText = droppedPackets;
+        }
+    }
+    lastPacketId = packetId;
+
     let channelsInPacket = 0;
     if (buf.length === 33 && buf[32] === 0xC0) channelsInPacket = 8;
     else if (buf.length === 51 && buf[50] === 0xC0) channelsInPacket = 16;
-    else return; // Неизвестный формат
+    else return; 
 
     if (activeChannels !== channelsInPacket) {
         activeChannels = channelsInPacket;
         document.getElementById('lblCH').innerText = activeChannels;
     }
 
-    let scale = (1.2 / currentPGA / 8388607.0) * 1e6; // Коэффициент в мкВ
+    let scale = (1.2 / currentPGA / 8388607.0) * 1e6; 
     let avgChannelValue = 0;
 
     for (let i = 0; i < activeChannels; i++) {
-        // Логика смещений: первые 8 каналов идут с байта 2, вторые 8 каналов с байта 26
         let start = i < 8 ? (2 + i * 3) : (26 + (i - 8) * 3);
         
         let val = (buf[start]<<16) | (buf[start+1]<<8) | buf[start+2];
-        if (val & 0x800000) val -= 0x1000000; // Sign extension
+        if (val & 0x800000) val -= 0x1000000; 
         let uV = val * scale;
         
-        // Сдвигаем историю
         for(let j=1; j<SCOPE_LEN; j++) scopeData[i][j-1] = scopeData[i][j];
         scopeData[i][SCOPE_LEN-1] = uV;
 
         if (i === 0) avgChannelValue = uV; 
     }
 
-    // Сохраняем в буфер FFT
     fftData[fftPointer++] = avgChannelValue;
     if (fftPointer >= 256) fftPointer = 0;
 }
 
 
-// === ОТРИСОВКА (CANVAS) ===
+// === ОТРИСОВКА ===
 const canvasScope = document.getElementById('scopeCanvas');
 const ctxScope = canvasScope.getContext('2d');
 const canvasFft = document.getElementById('fftCanvas');
@@ -360,7 +378,6 @@ function drawGrid(ctx, w, h, isFFT, maxVal) {
 function draw() {
     requestAnimationFrame(draw);
 
-    // Адаптивный ресайз canvas
     canvasScope.width = canvasScope.clientWidth;
     canvasScope.height = canvasScope.clientHeight;
     canvasFft.width = canvasFft.clientWidth;
@@ -369,14 +386,37 @@ function draw() {
     let wS = canvasScope.width, hS = canvasScope.height;
     let wF = canvasFft.width, hF = canvasFft.height;
 
+    // --- РАСЧЁТ DC(Mean), AC RMS И PK-PK ДЛЯ КАНАЛА 1 ---
+    if (activeChannels > 0) {
+        let ch0 = scopeData[0];
+        let sum = 0, min = Infinity, max = -Infinity;
+        for(let i=0; i<SCOPE_LEN; i++) {
+            sum += ch0[i];
+            if(ch0[i] > max) max = ch0[i];
+            if(ch0[i] < min) min = ch0[i];
+        }
+        
+        let mean = sum / SCOPE_LEN; // Постоянная составляющая (DC)
+        
+        let sqSum = 0;
+        for(let i=0; i<SCOPE_LEN; i++) {
+            sqSum += Math.pow(ch0[i] - mean, 2);
+        }
+        let ac_rms = Math.sqrt(sqSum / SCOPE_LEN); // Переменная составляющая (AC RMS)
+        
+        document.getElementById('lblMean').innerText = mean.toFixed(2) + " µV";
+        document.getElementById('lblRMS').innerText = ac_rms.toFixed(2) + " µV";
+        document.getElementById('lblPkPk').innerText = (max - min).toFixed(2) + " µV";
+    }
+
     // --- ОТРИСОВКА ОСЦИЛЛОГРАФА ---
     ctxScope.clearRect(0, 0, wS, hS);
     
-    // Автомасштаб амплитуды
     let maxAmp = 10; 
     let dcOffsets = [];
-    let channelsToDraw = activeChannels > 0 ? activeChannels : 1; // Рисуем хотя бы 1 пустую линию если нет данных
+    let channelsToDraw = activeChannels > 0 ? activeChannels : 1; 
 
+    // Ищем максимальную амплитуду для автомасштаба
     for (let ch = 0; ch < channelsToDraw; ch++) {
         let dc = scopeData[ch].reduce((a,b)=>a+b,0) / SCOPE_LEN;
         dcOffsets.push(dc);
@@ -385,22 +425,19 @@ function draw() {
             if (amp > maxAmp) maxAmp = amp;
         }
     }
-    maxAmp *= 1.2; // Отступ 20%
+    maxAmp *= 1.2; // Добавляем 20% отступа сверху/снизу
 
     drawGrid(ctxScope, wS, hS, false, maxAmp);
 
     ctxScope.lineWidth = 1.2;
     for (let ch = 0; ch < channelsToDraw; ch++) {
-        ctxScope.strokeStyle = colors[ch % colors.length]; // Зацикливаем цвета если каналов больше 16
+        ctxScope.strokeStyle = colors[ch % colors.length]; 
         ctxScope.beginPath();
-        
-        // Разделяем каналы по вертикали для наглядности (если их много)
         let chBaseY = (ch + 1) * (hS / (channelsToDraw + 1)); 
 
         for (let i = 0; i < SCOPE_LEN; i++) {
             let x = (i / (SCOPE_LEN-1)) * wS;
-            let val = scopeData[ch][i] - dcOffsets[ch];
-            // Масштабируем: чтобы линия не заезжала на соседние каналы, делим амплитуду
+            let val = scopeData[ch][i] - dcOffsets[ch]; // Рисуем без DC
             let scaledY = val * ( (hS / (channelsToDraw + 1)) / maxAmp ); 
             let y = chBaseY - scaledY;
             
@@ -413,17 +450,16 @@ function draw() {
     // --- ОТРИСОВКА СПЕКТРА (FFT) ---
     ctxFft.clearRect(0, 0, wF, hF);
     
-    // Применяем окно Ханна к Channel 0
     let signal = new Float32Array(256);
     let dcFft = fftData.reduce((a,b)=>a+b,0)/256;
     for(let i=0; i<256; i++) {
         let win = 0.5 * (1 - Math.cos((2 * Math.PI * i) / 255));
-        signal[i] = (fftData[i] - dcFft) * win;
+        signal[i] = (fftData[i] - dcFft) * win; // Убираем DC и накладываем окно Ханна
     }
 
-    let spectrum = new Float32Array(100);
+    let spectrum = new Float32Array(128);
     let maxFft = 1;
-    for (let k = 0; k < 100; k++) {
+    for (let k = 0; k < 128; k++) {
         let re = 0, im = 0;
         for (let n = 0; n < 256; n++) {
             let angle = (2 * Math.PI * k * n) / 256;
@@ -437,9 +473,15 @@ function draw() {
     drawGrid(ctxFft, wF, hF, true, 0);
 
     ctxFft.fillStyle = "rgba(0, 255, 0, 0.8)";
-    for (let k = 1; k < 100; k++) { 
-        let x = (k / 100) * wF;
-        let barW = (wF / 100) - 1;
+    for (let k = 1; k < 128; k++) { 
+        // Расчет реальной частоты каждого бина в зависимости от SPS
+        let hz = k * (currentSPS / 256);
+        if (hz > 100) break; // Рисуем только до 100 Гц для наглядности
+
+        let x = (hz / 100) * wF;
+        let nextHz = (k + 1) * (currentSPS / 256);
+        let barW = ((nextHz - hz) / 100) * wF - 1;
+        
         let y = (spectrum[k] / maxFft) * (hF - 20); 
         if (y > hF) y = hF;
         ctxFft.fillRect(x, hF - y, barW < 1 ? 1 : barW, y);

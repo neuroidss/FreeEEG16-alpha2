@@ -83,6 +83,11 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 void setup() {
     Serial.begin(115200);
 
+    // ========================================================
+    // ВАЖНО: ЗАПУСКАЕМ ГЛОБАЛЬНЫЙ SPI ДО ИНИЦИАЛИЗАЦИИ ЧИПОВ!
+    // ========================================================
+    SPI.begin(PIN_SCLK, PIN_MISO, PIN_MOSI, -1);
+
     // Инициализация SPI и пинов для двух чипов. 
     adc1.begin(PIN_SCLK, PIN_MISO, PIN_MOSI, PIN_CS1, PIN_DRDY1, PIN_RESET);
     adc2.begin(PIN_SCLK, PIN_MISO, PIN_MOSI, PIN_CS2, -1, PIN_RESET);
