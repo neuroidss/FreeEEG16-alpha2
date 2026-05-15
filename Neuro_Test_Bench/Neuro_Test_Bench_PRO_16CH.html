@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neuro Test Bench PRO (16CH)</title>
+    <style>
+        :root { --bg: #111; --panel: #1a1a1a; --border: #333; --accent: #0f0; --accent-hover: #0c0; --text: #eee; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); color: var(--text); margin: 0; padding: 15px; 
+            display: grid; grid-template-columns: 340px 1fr; grid-template-rows: 1fr 1fr; 
+            gap: 15px; height: 100vh; box-sizing: border-box; overflow: hidden;
+        }
+        
+        /* Адаптивность для мобильных */
+        @media (max-width: 900px) { 
+            body { 
+                grid-template-columns: 1fr; grid-template-rows: auto 400px 250px; 
+                height: auto; overflow: auto; 
+            } 
+        }
+        
+        .sidebar { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 15px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-y: auto;}
+        @media (max-width: 900px) { .sidebar { grid-row: 1; } }
+
+        .canvas-container { position: relative; background: #000; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; width: 100%; height: 100%; min-height: 250px; }
+        
+        h2 { margin: 0; font-size: 22px; text-align: center; color: var(--accent); letter-spacing: 1px; }
+        
+        button { background: #2a2a2a; color: var(--accent); border: 1px solid var(--accent); padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--accent); color: #000; }
+        button:disabled { border-color: #555; color: #555; background: #222; cursor: not-allowed; }
+        
+        .btn-connect { background: #0055ff; border-color: #4488ff; color: white; font-size: 16px; padding: 15px;}
+        .btn-connect:hover { background: #4488ff; color: white;}
+        
+        .control-group { display: flex; flex-direction: column; gap: 8px; background: #222; padding: 12px; border-radius: 8px; border: 1px solid #333; }
+        .control-row { display: flex; justify-content: space-between; align-items: center; }
+        .control-row label { font-size: 13px; font-weight: bold; color: #ccc; }
+        select { background: #111; color: var(--accent); border: 1px solid #444; padding: 6px; border-radius: 6px; font-weight: bold; outline: none; cursor: pointer; }
+        select:focus { border-color: var(--accent); }
+
+        .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .presets button { padding: 10px 5px; font-size: 12px; }
+
+        .status-box { background: #000; border: 1px solid #444; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; color: #aaa; display: flex; justify-content: space-between; }
+        .status-box span { color: var(--accent); font-weight: bold; }
+        
+        #console { background: #000; color: #0f0; font-family: monospace; font-size: 11px; flex-grow: 1; overflow-y: auto; padding: 10px; border-radius: 8px; border: 1px solid #444; word-wrap: break-word; min-height: 100px; }
+        
+        .canvas-title { position: absolute; top: 10px; right: 15px; color: #fff; font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; border: 1px solid #444; pointer-events: none;}
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>NEURO BENCH PRO</h2>
+        <button id="btnConnect" class="btn-connect">1. CONNECT BLE</button>
+
+        <div class="control-group">
+            <div class="control-row">
+                <label>PGA GAIN:</label>
+                <select id="selPGA">
+                    <option value="0">1</option>
+                    <option value="1">2</option>
+                    <option value="2">4</option>
+                    <option value="3">8</option>
+                    <option value="4">16</option>
+                    <option value="5">32</option>
+                    <option value="6">64</option>
+                    <option value="7">128</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <label>SAMPLE RATE:</label>
+                <select id="selSPS">
+                    <option value="7">250 SPS</option>
+                    <option value="6">500 SPS</option>
+                    <option value="5">1 kSPS</option>
+                    <option value="4">2 kSPS</option>
+                    <option value="3">4 kSPS</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <label>INPUT MUX:</label>
+                <select id="selMUX">
+                    <option value="0">Normal Input</option>
+                    <option value="1">Shorted (Noise)</option>
+                    <option value="2">Test Signal (DC)</option>
+                </select>
+            </div>
+            <button id="btnApply" onclick="applySettings()" style="margin-top: 5px; background: #333; color: white;">APPLY SETTINGS</button>
+        </div>
+
+        <div class="presets">
+            <button onclick="applyPreset(0, 7, 1)">NOISE TEST</button>
+            <button onclick="applyPreset(0, 7, 2)">DC SIGNAL</button>
+            <button onclick="applyPreset(5, 7, 0)">EEG (32x)</button>
+            <button onclick="applyPreset(2, 6, 0)">EMG (4x)</button>
+        </div>
+
+        <div class="status-box">
+            <div>CH: <span id="lblCH">0</span></div>
+            <div>PGA: <span id="lblPGA">?</span></div>
+            <div>SPS: <span id="lblSPS">?</span></div>
+        </div>
+
+        <div id="console">System Ready...<br></div>
+    </div>
+
+    <div class="canvas-container" style="grid-column: 2; grid-row: 1;">
+        <div class="canvas-title">OSCILLOSCOPE (Time vs µV)</div>
+        <canvas id="scopeCanvas"></canvas>
+    </div>
+    
+    <div class="canvas-container" style="grid-column: 2; grid-row: 2;">
+        <div class="canvas-title">FFT SPECTRUM (Hz vs Amp)</div>
+        <canvas id="fftCanvas"></canvas>
+    </div>
+
+<script>
+// --- BLE КОНФИГУРАЦИЯ ---
+const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const DATA_UUID    = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+const CMD_UUID     = "c0de0001-36e1-4688-b7f5-ea07361b26a8";
+
+let dataChar, cmdChar;
+let isConnected = false;
+let isConfiguring = false;
+
+// --- ПАРАМЕТРЫ СИСТЕМЫ ---
+let currentPGA = 1;
+let activeChannels = 0; // Определяется динамически по размеру пакета
+const MAX_CHANNELS = 32; // Резерв
+
+// --- БУФЕРЫ ОТРИСОВКИ ---
+const SCOPE_LEN = 300;
+let scopeData = Array.from({length: MAX_CHANNELS}, () => new Float32Array(SCOPE_LEN).fill(0));
+let fftData = new Float32Array(256).fill(0);
+let fftPointer = 0;
+
+// Цвета для 16+ каналов
+const colors = [
+    "#FF3333", "#FF9933", "#FFFF33", "#99FF33", "#33FF33", "#33FF99", "#33FFFF", "#3399FF", 
+    "#3333FF", "#9933FF", "#FF33FF", "#FF3399", "#FFFFFF", "#CCCCCC", "#999999", "#666666"
+];
+
+function log(msg) {
+    const c = document.getElementById('console');
+    const time = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+    c.innerHTML += `[${time}] ${msg}<br>`;
+    c.scrollTop = c.scrollHeight;
+}
+
+function setButtonsState(disabled) {
+    document.querySelectorAll('button:not(#btnConnect)').forEach(b => b.disabled = disabled);
+    document.querySelectorAll('select').forEach(b => b.disabled = disabled);
+}
+
+// === ПРОЗРАЧНЫЙ МОСТ ===
+let pendingReadResolve = null;
+
+async function readReg(addr) {
+    if (!cmdChar) return null;
+    return new Promise(async (resolve) => {
+        pendingReadResolve = resolve;
+        try {
+            await cmdChar.writeValue(new Uint8Array([addr]));
+            setTimeout(() => { if(pendingReadResolve===resolve){ resolve(null); } }, 400);
+        } catch(e) { resolve(null); }
+    });
+}
+
+async function writeRegVerified(addr, val, mask=null) {
+    if (!cmdChar) return;
+    let attempt = 1;
+    while (attempt <= 3) {
+        let data = mask !== null ? 
+            new Uint8Array([addr, (val>>8)&0xFF, val&0xFF, (mask>>8)&0xFF, mask&0xFF]) : 
+            new Uint8Array([addr, (val>>8)&0xFF, val&0xFF]);
+        
+        try {
+            await cmdChar.writeValue(data);
+            await new Promise(r => setTimeout(r, 80));
+            
+            let read_val = await readReg(addr);
+            if (read_val === null) throw "Timeout";
+
+            let expected = mask !== null ? (val & mask) : val;
+            let actual = mask !== null ? (read_val & mask) : read_val;
+
+            if (actual === expected) {
+                log(`[OK] 0x${addr.toString(16).padStart(2,'0')} = 0x${read_val.toString(16).padStart(4,'0')}`);
+                return;
+            } else {
+                log(`[ERR] 0x${addr.toString(16)}: Прочитано 0x${read_val.toString(16)}, Повтор...`);
+            }
+        } catch (e) { log(`Ошибка записи 0x${addr.toString(16)}: ${e}`); }
+        attempt++;
+        await new Promise(r => setTimeout(r, 100));
+    }
+    log(`[FAIL] Не удалось записать 0x${addr.toString(16)}!`);
+}
+
+// === УПРАВЛЕНИЕ НАСТРОЙКАМИ ===
+
+function applyPreset(pga, sps, mux) {
+    document.getElementById('selPGA').value = pga;
+    document.getElementById('selSPS').value = sps;
+    document.getElementById('selMUX').value = mux;
+    applySettings();
+}
+
+async function applySettings() {
+    if (isConfiguring || !isConnected) return;
+    isConfiguring = true; setButtonsState(true);
+    
+    let pgaCode = parseInt(document.getElementById('selPGA').value);
+    let spsCode = parseInt(document.getElementById('selSPS').value);
+    let muxCode = parseInt(document.getElementById('selMUX').value);
+
+    log("--- ПРИМЕНЕНИЕ НАСТРОЕК ---");
+    
+    // 1. OSR (Sample Rate) - Регистр 0x03, биты [4:2]
+    let osrVal = spsCode << 2;
+    await writeRegVerified(0x03, osrVal, 0x001C); 
+
+    // 2. PGA (Усиление) - Регистры 0x04 и 0x05
+    let pgaVal = (pgaCode<<12) | (pgaCode<<8) | (pgaCode<<4) | pgaCode;
+    await writeRegVerified(0x04, pgaVal); 
+    await writeRegVerified(0x05, pgaVal); 
+    currentPGA = [1,2,4,8,16,32,64,128][pgaCode];
+
+    // 3. MUX - Регистры 0x09 + i*5
+    for (let i = 0; i < 8; i++) {
+        await writeRegVerified(0x09 + (i * 5), muxCode, 0x0003); 
+    }
+
+    // Обновляем UI
+    document.getElementById('lblPGA').innerText = currentPGA;
+    document.getElementById('lblSPS').innerText = document.getElementById('selSPS').options[document.getElementById('selSPS').selectedIndex].text;
+    log("--- НАСТРОЙКИ ПРИМЕНЕНЫ ---");
+    
+    isConfiguring = false; setButtonsState(false);
+}
+
+
+// === ПОДКЛЮЧЕНИЕ ===
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        log("Поиск BLE устройства...");
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services:[SERVICE_UUID] }] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        
+        dataChar = await service.getCharacteristic(DATA_UUID);
+        cmdChar = await service.getCharacteristic(CMD_UUID);
+
+        await cmdChar.startNotifications();
+        cmdChar.addEventListener('characteristicvaluechanged', (e) => {
+            const v = new DataView(e.target.value.buffer);
+            if (v.byteLength === 3 && pendingReadResolve) {
+                pendingReadResolve(v.getUint16(1, false));
+                pendingReadResolve = null;
+            }
+        });
+
+        await dataChar.startNotifications();
+        dataChar.addEventListener('characteristicvaluechanged', handleData);
+
+        isConnected = true;
+        document.getElementById('btnConnect').innerText = "CONNECTED";
+        document.getElementById('btnConnect').style.background = var(--accent);
+        document.getElementById('btnConnect').style.color = "#000";
+        log("Подключено! Проверяем связь...");
+        
+        let id = await readReg(0x00);
+        log(`ID чипа: 0x${id !== null ? id.toString(16) : "ERROR"}`);
+
+    } catch (e) { log("Ошибка BLE: " + e); }
+};
+
+// === ПАРСИНГ ДАННЫХ И АВТО-ДЕТЕКТ КАНАЛОВ ===
+function handleData(e) {
+    const buf = new Uint8Array(e.target.value.buffer);
+    
+    // Проверка заголовка
+    if (buf[0] !== 0xA0) return;
+
+    // Автоопределение количества каналов
+    // Если 33 байта -> 8 каналов, если 51 байт -> 16 каналов.
+    let channelsInPacket = 0;
+    if (buf.length === 33 && buf[32] === 0xC0) channelsInPacket = 8;
+    else if (buf.length === 51 && buf[50] === 0xC0) channelsInPacket = 16;
+    else return; // Неизвестный формат
+
+    if (activeChannels !== channelsInPacket) {
+        activeChannels = channelsInPacket;
+        document.getElementById('lblCH').innerText = activeChannels;
+    }
+
+    let scale = (1.2 / currentPGA / 8388607.0) * 1e6; // Коэффициент в мкВ
+    let avgChannelValue = 0;
+
+    for (let i = 0; i < activeChannels; i++) {
+        // Логика смещений: первые 8 каналов идут с байта 2, вторые 8 каналов с байта 26
+        let start = i < 8 ? (2 + i * 3) : (26 + (i - 8) * 3);
+        
+        let val = (buf[start]<<16) | (buf[start+1]<<8) | buf[start+2];
+        if (val & 0x800000) val -= 0x1000000; // Sign extension
+        let uV = val * scale;
+        
+        // Сдвигаем историю
+        for(let j=1; j<SCOPE_LEN; j++) scopeData[i][j-1] = scopeData[i][j];
+        scopeData[i][SCOPE_LEN-1] = uV;
+
+        if (i === 0) avgChannelValue = uV; 
+    }
+
+    // Сохраняем в буфер FFT
+    fftData[fftPointer++] = avgChannelValue;
+    if (fftPointer >= 256) fftPointer = 0;
+}
+
+
+// === ОТРИСОВКА (CANVAS) ===
+const canvasScope = document.getElementById('scopeCanvas');
+const ctxScope = canvasScope.getContext('2d');
+const canvasFft = document.getElementById('fftCanvas');
+const ctxFft = canvasFft.getContext('2d');
+
+function drawGrid(ctx, w, h, isFFT, maxVal) {
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#888";
+    ctx.font = "10px monospace";
+    ctx.textAlign = "left";
+    ctx.beginPath();
+    
+    if (isFFT) {
+        for (let hz = 0; hz <= 100; hz += 10) {
+            let x = (hz / 100) * w;
+            ctx.moveTo(x, 0); ctx.lineTo(x, h);
+            if(hz > 0) ctx.fillText(hz + "Hz", x + 2, h - 2);
+        }
+    } else {
+        let steps = 4;
+        for (let i = 0; i <= steps; i++) {
+            let y = i * (h / steps);
+            ctx.moveTo(0, y); ctx.lineTo(w, y);
+            let val = maxVal - (2 * maxVal * (i / steps));
+            ctx.fillText(val.toFixed(0) + " µV", 2, y + 10);
+        }
+    }
+    ctx.stroke();
+}
+
+function draw() {
+    requestAnimationFrame(draw);
+
+    // Адаптивный ресайз canvas
+    canvasScope.width = canvasScope.clientWidth;
+    canvasScope.height = canvasScope.clientHeight;
+    canvasFft.width = canvasFft.clientWidth;
+    canvasFft.height = canvasFft.clientHeight;
+
+    let wS = canvasScope.width, hS = canvasScope.height;
+    let wF = canvasFft.width, hF = canvasFft.height;
+
+    // --- ОТРИСОВКА ОСЦИЛЛОГРАФА ---
+    ctxScope.clearRect(0, 0, wS, hS);
+    
+    // Автомасштаб амплитуды
+    let maxAmp = 10; 
+    let dcOffsets = [];
+    let channelsToDraw = activeChannels > 0 ? activeChannels : 1; // Рисуем хотя бы 1 пустую линию если нет данных
+
+    for (let ch = 0; ch < channelsToDraw; ch++) {
+        let dc = scopeData[ch].reduce((a,b)=>a+b,0) / SCOPE_LEN;
+        dcOffsets.push(dc);
+        for(let i=0; i<SCOPE_LEN; i++) {
+            let amp = Math.abs(scopeData[ch][i] - dc);
+            if (amp > maxAmp) maxAmp = amp;
+        }
+    }
+    maxAmp *= 1.2; // Отступ 20%
+
+    drawGrid(ctxScope, wS, hS, false, maxAmp);
+
+    ctxScope.lineWidth = 1.2;
+    for (let ch = 0; ch < channelsToDraw; ch++) {
+        ctxScope.strokeStyle = colors[ch % colors.length]; // Зацикливаем цвета если каналов больше 16
+        ctxScope.beginPath();
+        
+        // Разделяем каналы по вертикали для наглядности (если их много)
+        let chBaseY = (ch + 1) * (hS / (channelsToDraw + 1)); 
+
+        for (let i = 0; i < SCOPE_LEN; i++) {
+            let x = (i / (SCOPE_LEN-1)) * wS;
+            let val = scopeData[ch][i] - dcOffsets[ch];
+            // Масштабируем: чтобы линия не заезжала на соседние каналы, делим амплитуду
+            let scaledY = val * ( (hS / (channelsToDraw + 1)) / maxAmp ); 
+            let y = chBaseY - scaledY;
+            
+            if (i === 0) ctxScope.moveTo(x, y);
+            else ctxScope.lineTo(x, y);
+        }
+        ctxScope.stroke();
+    }
+
+    // --- ОТРИСОВКА СПЕКТРА (FFT) ---
+    ctxFft.clearRect(0, 0, wF, hF);
+    
+    // Применяем окно Ханна к Channel 0
+    let signal = new Float32Array(256);
+    let dcFft = fftData.reduce((a,b)=>a+b,0)/256;
+    for(let i=0; i<256; i++) {
+        let win = 0.5 * (1 - Math.cos((2 * Math.PI * i) / 255));
+        signal[i] = (fftData[i] - dcFft) * win;
+    }
+
+    let spectrum = new Float32Array(100);
+    let maxFft = 1;
+    for (let k = 0; k < 100; k++) {
+        let re = 0, im = 0;
+        for (let n = 0; n < 256; n++) {
+            let angle = (2 * Math.PI * k * n) / 256;
+            re += signal[n] * Math.cos(angle);
+            im -= signal[n] * Math.sin(angle);
+        }
+        spectrum[k] = Math.sqrt(re*re + im*im);
+        if (spectrum[k] > maxFft && k > 0) maxFft = spectrum[k]; 
+    }
+
+    drawGrid(ctxFft, wF, hF, true, 0);
+
+    ctxFft.fillStyle = "rgba(0, 255, 0, 0.8)";
+    for (let k = 1; k < 100; k++) { 
+        let x = (k / 100) * wF;
+        let barW = (wF / 100) - 1;
+        let y = (spectrum[k] / maxFft) * (hF - 20); 
+        if (y > hF) y = hF;
+        ctxFft.fillRect(x, hF - y, barW < 1 ? 1 : barW, y);
+    }
+}
+draw();
+</script>
+</body>
+</html>
