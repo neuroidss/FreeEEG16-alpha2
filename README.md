@@ -1,5 +1,7 @@
 # FreeEEG16-alpha2
 
+[https://neuroidss.github.io/NEURO-CULTIVATION/](https://neuroidss.github.io/NEURO-CULTIVATION/)
+
 This project relies on a custom ultra-high-density EEG device, NOT a standard medical or consumer EEG headset.
 - **Device Name:** FreeEEG16-alpha2
 - **Form Factor:** 26mm diameter circular PCB.
@@ -10,8 +12,6 @@ This project relies on a custom ultra-high-density EEG device, NOT a standard me
 - **Placement:** Works entirely locally, primarily targeted at the Pz (parietal) placement.
 - **Key Capability:** NO distant electrodes are required. Reference and Ground are located in the same 26mm cluster as the active channels.
 - **Performance:** When placed on Pz, the system provides a high-fidelity real-time loop. Users can observe immediate bio-reactive changes in procedural shaders, minimizing the cognitive load required to establish stable neurofeedback.
-
-[https://neuroidss.github.io/NEURO-CULTIVATION/](https://neuroidss.github.io/NEURO-CULTIVATION/)
 
 [Neuro_Test_Bench_PRO_16CH](https://neuroidss.github.io/FreeEEG16-alpha2/Neuro_Test_Bench/Neuro_Test_Bench_PRO_16CH.html)
 
