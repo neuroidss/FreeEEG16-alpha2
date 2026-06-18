@@ -1,7 +1,6 @@
 # FreeEEG16-alpha2
 
-**Live Demo:** 
-- [https://neuroidss.github.io/NEURO-CULTIVATION/](https://neuroidss.github.io/NEURO-CULTIVATION/)
+[https://neuroidss.github.io/NEURO-CULTIVATION/](https://neuroidss.github.io/NEURO-CULTIVATION/)
 
 [Neuro_Test_Bench_PRO_16CH](https://neuroidss.github.io/FreeEEG16-alpha2/Neuro_Test_Bench/Neuro_Test_Bench_PRO_16CH.html)
 
