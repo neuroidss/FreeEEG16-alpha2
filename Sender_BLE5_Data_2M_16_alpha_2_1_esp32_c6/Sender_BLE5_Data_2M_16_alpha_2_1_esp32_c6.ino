@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "esp_mac.h"
 #include <SPI.h>
 #include "ADS131M08.h"
 #include <NimBLEDevice.h>
@@ -65,16 +66,23 @@ class CmdCallbacks : public NimBLECharacteristicCallbacks {
     }
 };
 
+// Переменные для отложенного согласования параметров связи
+volatile uint16_t activeConnHandle = 0;
+volatile unsigned long connectTime = 0;
+volatile bool paramUpdatePending = false;
+
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
         deviceConnected = true;
-        // Запрос на обновление параметров соединения (интервал 6*1.25 = 7.5мс)
-        pServer->updateConnParams(connInfo.getConnHandle(), 6, 6, 0, 100);
-        Serial.println("BLE Connected!");
+        activeConnHandle = connInfo.getConnHandle();
+        connectTime = millis();
+        paramUpdatePending = true; // Выставляем флаг для отложенного запроса в loop
+        Serial.println("BLE Connected! Waiting 2 seconds before parameter negotiation...");
     }
     
     void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
         deviceConnected = false;
+        paramUpdatePending = false;
         needs_adv_restart = true; 
         Serial.printf("BLE Disconnected. Reason: %d\n", reason);
     }
@@ -83,38 +91,35 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 void setup() {
     Serial.begin(115200);
 
-    // ========================================================
-    // ВАЖНО: ЗАПУСКАЕМ ГЛОБАЛЬНЫЙ SPI ДО ИНИЦИАЛИЗАЦИИ ЧИПОВ!
-    // ========================================================
     SPI.begin(PIN_SCLK, PIN_MISO, PIN_MOSI, -1);
 
-    // Инициализация SPI и пинов для двух чипов. 
     adc1.begin(PIN_SCLK, PIN_MISO, PIN_MOSI, PIN_CS1, PIN_DRDY1, PIN_RESET);
     adc2.begin(PIN_SCLK, PIN_MISO, PIN_MOSI, PIN_CS2, -1, PIN_RESET);
     
-    // Сброс (дергает общий пин PIN_RESET, аппаратно сбрасываются оба чипа)
     adc1.reset();
 
-    // Настройка первого АЦП (каналы 1-8)
     adc1.setOsr(OSR_16384); 
-    adc1.writeRegisterMasked(0x08, 0x0F, 0x000F); // DC Block > 1Hz
-    adc1.writeRegister(REG_GAIN1, 0x2222); // Усиление x32
+    adc1.writeRegisterMasked(0x08, 0x0F, 0x000F);
+    adc1.writeRegister(REG_GAIN1, 0x2222);
     adc1.writeRegister(REG_GAIN2, 0x2222); 
 
-    // Настройка второго АЦП (каналы 9-16)
     adc2.setOsr(OSR_16384); 
-    adc2.writeRegisterMasked(0x08, 0x0F, 0x000F); // DC Block > 1Hz
-    adc2.writeRegister(REG_GAIN1, 0x2222); // Усиление x32
+    adc2.writeRegisterMasked(0x08, 0x0F, 0x000F);
+    adc2.writeRegister(REG_GAIN1, 0x2222);
     adc2.writeRegister(REG_GAIN2, 0x2222); 
 
-    // Инициализация "скелета" кастомного пакета
     customPacket[0] = 0xA0;
     customPacket[50] = 0xC0; 
 
     // BLE Инициализация
     NimBLEDevice::init("FreeEEG16");
-    NimBLEDevice::setPower(ESP_PWR_LVL_P3); // +3 dBm
     
+    // Повышаем мощность передатчика для устойчивости к помехам и коллизиям
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9); // +9 dBm (значительно улучшает SNR)
+    
+    // Включаем поддержку MTU до 64 байт для предотвращения фрагментации 51-байтового пакета
+    NimBLEDevice::setMTU(64); 
+
     NimBLEServer *pServer = NimBLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
 
@@ -130,7 +135,6 @@ void setup() {
     NimBLEDevice::getAdvertising()->addServiceUUID(SERVICE_UUID);
     NimBLEDevice::getAdvertising()->start();
 
-    // Настраиваем прерывание только на DRDY первого чипа
     pinMode(PIN_DRDY1, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(PIN_DRDY1), onDrdy, FALLING);
 }
@@ -144,12 +148,29 @@ void loop() {
         Serial.println("Advertising restarted. Ready for reconnect.");
     }
 
+    // --- ОТЛОЖЕННЫЙ ЗАПРОС ПАРАМЕТРОВ СВЯЗИ ---
+    // Договариваемся о таймслотах строго через 2 секунды после подключения,
+    // когда GATT-процедуры хоста полностью завершены.
+    if (deviceConnected && paramUpdatePending && (millis() - connectTime > 2000)) {
+        paramUpdatePending = false;
+        
+        uint8_t mac[6];
+        esp_read_mac(mac, ESP_MAC_BT);
+        
+        // Разносим фазы связи устройств на основе их MAC-адресов
+        int offset = (mac[5] % 4) * 2; 
+        uint16_t min_int = 16 + offset; // Интервал от 20 мс до 27.5 мс
+        uint16_t max_int = min_int + 4;  // Небольшой люфт для планировщика ОС
+        
+        NimBLEDevice::getServer()->updateConnParams(activeConnHandle, min_int, max_int, 0, 400);
+        Serial.printf("[SYSTEM] Connection parameters negotiated: min=%d, max=%d\n", min_int, max_int);
+    }
+
     // 1. ОБРАБОТКА ЧТЕНИЯ РЕГИСТРА
     if (has_pending_read) {
         uint16_t val = adc1.readRegister(reg_addr);
         uint8_t tx[3] = { reg_addr, (uint8_t)(val >> 8), (uint8_t)(val & 0xFF) };
         pCmdCharacteristic->notify(tx, 3);
-        Serial.printf("Read Reg 0x%02X -> 0x%04X\n", reg_addr, val);
         has_pending_read = false;
     }
 
@@ -158,11 +179,9 @@ void loop() {
         if (use_mask) {
             adc1.writeRegisterMasked(reg_addr, reg_val, reg_mask);
             adc2.writeRegisterMasked(reg_addr, reg_val, reg_mask);
-            Serial.printf("Write Masked: 0x%02X, Val 0x%04X, Mask 0x%04X\n", reg_addr, reg_val, reg_mask);
         } else {
             adc1.writeRegister(reg_addr, reg_val);
             adc2.writeRegister(reg_addr, reg_val);
-            Serial.printf("Write Direct: 0x%02X, Val 0x%04X\n", reg_addr, reg_val);
         }
         has_pending_write = false;
     }
@@ -171,17 +190,12 @@ void loop() {
     if (drdyTriggered) {
         drdyTriggered = false;
         
-        // Читаем данные последовательно с двух чипов
         AdcOutput raw1 = adc1.readAdcRaw();
         AdcOutput raw2 = adc2.readAdcRaw();
 
         if (deviceConnected) {
-            // Пишем счетчик семплов
             customPacket[1] = sampleCounter++;
 
-            // ==========================================
-            // Заполняем каналы 1-8 (ADC1)
-            // ==========================================
             for (int i = 0; i < 8; i++) {
                 int32_t v = raw1.ch[i].i;
                 customPacket[2 + i*3 + 0] = (v >> 16) & 0xFF;
@@ -189,18 +203,14 @@ void loop() {
                 customPacket[2 + i*3 + 2] = v & 0xFF;
             }
 
-            // ==========================================
-            // Заполняем каналы 9-16 (ADC2)
-            // ==========================================
             for (int i = 0; i < 8; i++) {
                 int32_t v = raw2.ch[i].i;
-                // Сдвигаем индекс на 24 байта вперед (т.к. первые 8 каналов занимают 24 байта)
                 customPacket[26 + i*3 + 0] = (v >> 16) & 0xFF;
                 customPacket[26 + i*3 + 1] = (v >> 8) & 0xFF;
                 customPacket[26 + i*3 + 2] = v & 0xFF;
             }
 
-            // Отправляем ОДИН пакет размером 51 байт
+            // Пакет будет отправлен цельным кадром за один раз
             pDataCharacteristic->notify(customPacket, 51);
             
         } else if (!sampleCounter){
